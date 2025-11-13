@@ -37,8 +37,8 @@ public class ServerHMAC {
         HttpServer httpServer = HttpServer.create();
         ServiceHMAC service = new ServiceHMAC(config, log);
         httpServer.bind(new InetSocketAddress(config.getListenPort()), 0);
-        httpServer.createContext("/api/sign", new HanderSignHMAC(service, config, log));
-        httpServer.createContext("/api/verify", new HanderVerifyHMAC(service, config, log));
+        httpServer.createContext("/sign", new HanderSignHMAC(service, config, log));
+        httpServer.createContext("/verify", new HanderVerifyHMAC(service, config, log));
         httpServer.start();
         log.println("HMAC Server Started");
     }
