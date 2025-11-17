@@ -21,7 +21,7 @@ public class ServerHMAC {
     public static void main(String[] args) {
         try (FileOutputStream fos = new FileOutputStream("log.txt"); Writer writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
             PrintWriter log = new PrintWriter(writer, true);
-            log = new PrintWriter(System.out, true); //TODO comment on commit
+            //log = new PrintWriter(System.out, true); //TODO comment on commit
             try {
                 ConfigStorage.ConfigHMAC config = new ConfigStorage(log).load();
                 new ServerHMAC(config, log).run();
