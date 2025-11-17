@@ -4,6 +4,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
@@ -30,7 +31,7 @@ public class ServiceHMAC {
 
     boolean verify(byte[] msg, byte[] signature) {
         byte[] sig = mac.doFinal(msg);
-        return Arrays.equals(sig, signature);
+        return MessageDigest.isEqual(sig, signature);
     }
 
 }
