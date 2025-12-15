@@ -24,8 +24,31 @@ public class ConfigStorage {
 
         try (FileInputStream fis = new FileInputStream(CONFIG_FILE); BufferedReader in = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8))) {
             ConfigHMAC configHMAC = gson.fromJson(in, new ConfigHMACTypeToken().getType());
+            validateConfig(configHMAC);
             log.println("Loaded config from file: " + CONFIG_FILE);
             return configHMAC;
+        }
+    }
+
+    private void validateConfig(ConfigHMAC config) throws IOException {
+        if (config == null) {
+            throw new IOException("config_error: empty config.json");
+        }
+        validateSecret(config.getSecret());
+    }
+
+    private void validateSecret(String secret) throws IOException {
+        if (secret == null || secret.isBlank()) {
+            throw new IOException("config_error: secret is missing or empty");
+        }
+        byte[] secretBytes;
+        try {
+            secretBytes = HelperBase64.decode(secret);
+        } catch (IllegalArgumentException e) {
+            throw new IOException("config_error: secret must be base64url encoded");
+        }
+        if (secretBytes.length < 16) {
+            throw new IOException("config_error: secret too short (min 16 bytes)");
         }
     }
 

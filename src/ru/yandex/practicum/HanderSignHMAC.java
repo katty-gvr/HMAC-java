@@ -11,11 +11,14 @@ public class HanderSignHMAC extends MyAbstractHttpHandler {
 
     private final ServiceHMAC service;
     private final PrintWriter log;
+    private final HMACRequestValidator requestValidator;
 
-    public HanderSignHMAC(ServiceHMAC service, ConfigStorage.ConfigHMAC config, PrintWriter log) {
-        super("POST");
+    public HanderSignHMAC(ServiceHMAC service, ConfigStorage.ConfigHMAC config, PrintWriter log,
+                          HMACRequestValidator requestValidator, JsonResponseSender jsonResponseSender) {
+        super("POST", jsonResponseSender, config);
         this.service = service;
         this.log = log;
+        this.requestValidator = requestValidator;
     }
 
     @Override
@@ -27,10 +30,11 @@ public class HanderSignHMAC extends MyAbstractHttpHandler {
                     .setPrettyPrinting()
                     .create();
             SignRequest request = gson.fromJson(new InputStreamReader(requestBody, StandardCharsets.UTF_8), SignRequest.class);
+            requestValidator.validateMessage(exchange, gson, request.msg);
             byte[] sign = service.sign(request.msg.getBytes(StandardCharsets.UTF_8));
             SignResponse response = new SignResponse();
             response.setSignature(HelperBase64.encode(sign));
-            log.println(String.format("signed %s, result %s", request.getMsg(), response.getSignature()));
+            log.println(String.format("signed message with length %s, result length = %s", request.getMsg().length(), response.getSignature().length()));
             exchange.sendResponseHeaders(200, 0);
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(responseBody, StandardCharsets.UTF_8))) {
                 gson.toJson(response, writer);

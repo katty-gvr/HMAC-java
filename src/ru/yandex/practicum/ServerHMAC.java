@@ -12,10 +12,15 @@ public class ServerHMAC {
 
     private final ConfigStorage.ConfigHMAC config;
     private final PrintWriter log;
+    private final HMACRequestValidator requestValidator;
+    private final JsonResponseSender jsonResponseSender;
 
-    public ServerHMAC(ConfigStorage.ConfigHMAC config, PrintWriter log) {
+    public ServerHMAC(ConfigStorage.ConfigHMAC config, PrintWriter log, HMACRequestValidator requestValidator,
+                      JsonResponseSender jsonResponseSender) {
         this.config = config;
         this.log = log;
+        this.requestValidator = requestValidator;
+        this.jsonResponseSender = jsonResponseSender;
     }
 
     public static void main(String[] args) {
@@ -24,7 +29,8 @@ public class ServerHMAC {
             //log = new PrintWriter(System.out, true); //TODO comment on commit
             try {
                 ConfigStorage.ConfigHMAC config = new ConfigStorage(log).load();
-                new ServerHMAC(config, log).run();
+                JsonResponseSender jsonResponseSender = new JsonResponseSender();
+                new ServerHMAC(config, log, new HMACRequestValidator(config, jsonResponseSender), jsonResponseSender).run();
             } catch (Exception e) {
                 e.printStackTrace(log);
             }
@@ -37,8 +43,8 @@ public class ServerHMAC {
         HttpServer httpServer = HttpServer.create();
         ServiceHMAC service = new ServiceHMAC(config, log);
         httpServer.bind(new InetSocketAddress(config.getListenPort()), 0);
-        httpServer.createContext("/sign", new HanderSignHMAC(service, config, log));
-        httpServer.createContext("/verify", new HanderVerifyHMAC(service, config, log));
+        httpServer.createContext("/sign", new HanderSignHMAC(service, config, log, requestValidator, jsonResponseSender));
+        httpServer.createContext("/verify", new HanderVerifyHMAC(service, config, log, requestValidator, jsonResponseSender));
         httpServer.start();
         log.println("HMAC Server Started");
     }
