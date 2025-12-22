@@ -3,6 +3,8 @@ package ru.yandex.practicum;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
+import ru.yandex.practicum.request.SignRequest;
+import ru.yandex.practicum.response.SignResponse;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -23,54 +25,32 @@ public class HanderSignHMAC extends MyAbstractHttpHandler {
 
     @Override
     public void handlePost(HttpExchange exchange) throws IOException {
-        try {
-            InputStream requestBody = exchange.getRequestBody();
-            OutputStream responseBody = exchange.getResponseBody();
-            Gson gson = new GsonBuilder()
-                    .setPrettyPrinting()
-                    .create();
-            SignRequest request = gson.fromJson(new InputStreamReader(requestBody, StandardCharsets.UTF_8), SignRequest.class);
-            requestValidator.validateMessage(exchange, gson, request.msg);
-            byte[] sign = service.sign(request.msg.getBytes(StandardCharsets.UTF_8));
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .create();
+        try (InputStream requestBody = exchange.getRequestBody();
+             InputStreamReader reader = new InputStreamReader(requestBody, StandardCharsets.UTF_8)) {
+            SignRequest request = gson.fromJson(reader, SignRequest.class);
+            requestValidator.validateMessage(exchange, gson, request.getMsg());
+            byte[] sign = service.sign(request.getMsg().getBytes(StandardCharsets.UTF_8));
             SignResponse response = new SignResponse();
             response.setSignature(HelperBase64.encode(sign));
-            log.println(String.format("signed message with length %s, result length = %s", request.getMsg().length(), response.getSignature().length()));
+            log.println(String.format(
+                    "signed message with length %s, result length = %s",
+                    request.getMsg().length(),
+                    response.getSignature().length()
+            ));
             exchange.sendResponseHeaders(200, 0);
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(responseBody, StandardCharsets.UTF_8))) {
+            try (OutputStream responseBody = exchange.getResponseBody();
+                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(responseBody, StandardCharsets.UTF_8))) {
                 gson.toJson(response, writer);
             }
         } catch (Exception e) {
             exchange.sendResponseHeaders(500, 0);
-            e.printStackTrace(new PrintStream(exchange.getResponseBody()));
-        } finally {
-            exchange.getResponseBody().close();
+            try (PrintStream ps = new PrintStream(exchange.getResponseBody())) {
+                e.printStackTrace(ps);
+            }
         }
     }
-
-    public class SignRequest {
-
-        private String msg;
-
-        public String getMsg() {
-            return msg;
-        }
-
-        public void setMsg(String msg) {
-            this.msg = msg;
-        }
-    }
-
-    public class SignResponse {
-        String signature;
-
-        public String getSignature() {
-            return signature;
-        }
-
-        public void setSignature(String signature) {
-            this.signature = signature;
-        }
-    }
-
 
 }

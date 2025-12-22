@@ -2,6 +2,7 @@ package ru.yandex.practicum;
 
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
+import ru.yandex.practicum.response.ErrorResponse;
 
 import java.io.IOException;
 import java.io.OutputStream;
